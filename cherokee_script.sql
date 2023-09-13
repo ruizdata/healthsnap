@@ -6,7 +6,7 @@ CREATE OR REPLACE PROCEDURE public.cherokee_script(
 	)
 LANGUAGE 'sql'
 AS $BODY$
-/* Cherokee Script
+/* Cherokee Regional Medical Center Script
 
 Set-Up
 
@@ -71,7 +71,7 @@ ADD COLUMN IF NOT EXISTS rpm_data_point VARCHAR(225);
 
 -- You can execute the entire code block provided below.
 
--- 1.	Remove MRNs already in the Exclusions list.
+-- Remove MRNs already in the Exclusions list.
 
 UPDATE cherokee_import
 SET delete = TRUE
@@ -79,7 +79,7 @@ WHERE "mrn" IN (
     SELECT "MRN" FROM cherokee_exclusions
 );
 
--- 2.	Remove duplicate MRNs.
+-- Remove duplicate MRNs.
 
 UPDATE cherokee_import
 SET delete = TRUE
@@ -89,19 +89,19 @@ WHERE ctid NOT IN (
    GROUP BY "mrn"
 );
 
--- 3.	Remove blank MRNs.
+-- Remove blank MRNs.
 
 UPDATE cherokee_import
 SET delete = TRUE
 WHERE "mrn" IS NULL OR TRIM("mrn") = '';
 
--- 4.	Remove patients whose primary insurance is not Medicare, Medicare Part A and B, or Medicare Part B.
+-- Remove patients whose primary insurance is not Medicare, Medicare Part A and B, or Medicare Part B.
 
 UPDATE cherokee_import
 SET delete = TRUE
 WHERE "primary_insurance" NOT LIKE 'MEDICARE A AND B';
 
--- 5.	Remove patients whose secondary insurance contain Tricare, ChampVA, BCBS of South Carolina, or blank.
+-- Remove patients whose secondary insurance contain Tricare, ChampVA, BCBS of South Carolina, or blank.
 
 UPDATE cherokee_import
 SET delete = TRUE
@@ -112,18 +112,18 @@ WHERE "secondary_insurance" LIKE '%TRICARE%'
    OR "secondary_insurance" IS NULL
    OR "secondary_insurance" = '';
 
--- 6.	Make patients name proper case.
+-- Make patients name proper case.
 
 UPDATE cherokee_import
 SET "first_name" = UPPER(LEFT("first_name", 1)) || LOWER(SUBSTRING("first_name", 2)),
     "last_name" = UPPER(LEFT("last_name", 1)) || LOWER(SUBSTRING("last_name", 2));
 
--- 7.	Remove dashes from phone numbers.
+-- Remove dashes from phone numbers.
 
 UPDATE cherokee_import
 SET "home_phone" = REPLACE(REPLACE(REPLACE(REPLACE("home_phone", '(', ''), ')', ''), '-', ''), ' ', '');
 
--- 8.   If the home phone is misssing, use the mobile phone.
+-- If the home phone is misssing, use the mobile phone.
 
 UPDATE cherokee_import
 SET "home_phone" = CASE
@@ -131,13 +131,13 @@ SET "home_phone" = CASE
     ELSE "home_phone"
     END;
 
--- 9.   Fill blank patient emails using the format newberry+<MRN>@healthsnap.io.
+-- Fill blank patient emails using the format newberry+<MRN>@healthsnap.io.
 
 UPDATE cherokee_import
 SET "email" = CONCAT('cherokeeregional+', "mrn", '@healthsnap.io')
 WHERE "email" IS NULL OR "email" = '';
 
--- 11. Add provider emails and signatures.
+-- Add provider emails and signatures.
 
 UPDATE cherokee_import
 SET provider_full_name = provider_first_name || ' ' || provider_last_name;
@@ -147,12 +147,12 @@ SET provider_email = cherokee_providers."Email"
 FROM cherokee_providers
 WHERE cherokee_import.provider_full_name = cherokee_providers."Provider Name";
 
--- 12. Set enrollment date to today.
+-- Set enrollment date to today.
 
 UPDATE cherokee_import
 SET enrollment_date = CURRENT_DATE;
 
--- 14. Select edited list
+-- Select edited list
 
 SELECT *
 FROM cherokee_import
